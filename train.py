@@ -220,20 +220,14 @@ def main():
 
                 sess.run(reset_metrics_op)
                 for batch_idx_val in range(batch_num_val):
-                    if not setting.keep_remainder \
-                            or num_val % batch_size == 0 \
-                            or batch_idx_val != batch_num_val - 1:
-                        batch_size_val = batch_size
-                    else:
-                        batch_size_val = num_val % batch_size
-                    xforms_np, rotations_np = util.get_xforms(batch_size_val,
+                    xforms_np, rotations_np = util.get_xforms(batch_size,
                                                             rotation_range=rotation_range_val,
                                                             scaling_range=scaling_range_val,
                                                             order=setting.rotation_order)
                     sess.run([loss_mean_update_op, t_1_acc_update_op, t_1_per_class_acc_update_op],
                              feed_dict={
                                  handle: handle_val,
-                                 indices: util.get_indices(batch_size_val, sample_num, point_num,
+                                 indices: util.get_indices(batch_size, sample_num, point_num,
                                                          ),
                                  xforms: xforms_np,
                                  rotations: rotations_np,
