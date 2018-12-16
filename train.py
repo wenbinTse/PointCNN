@@ -19,15 +19,7 @@ from datetime import datetime
 import pointcnn_cls as model
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--path_train', '-t', help='Path to train data', required=True)
-    parser.add_argument('--path_val', '-v', help='Path to validation data')
-    parser.add_argument('--load_ckpt', '-l', help='Path to a check point file for load')
-    parser.add_argument('--save_folder', '-s', help='Path to folder for saving check points and summary', required=True)
-    parser.add_argument('--setting', '-x', help='Setting to use', required=True, default='modelnet_x3_l4')
-    parser.add_argument('--epochs', help='Number of training epochs (default defined in setting)', type=int)
-    parser.add_argument('--batch_size', help='Batch size (default defined in setting)', type=int)
-    args = parser.parse_args()
+    args = util.prase_args()
 
     time_string = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     root_folder = os.path.join(args.save_folder, '%s_%s_%d' % (args.setting, time_string, os.getpid()))
