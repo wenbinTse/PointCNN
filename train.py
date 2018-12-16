@@ -90,7 +90,7 @@ def main():
         .batch(batch_size) \
         .repeat(num_epochs)
 
-    batch_num_per_epoch = math.ceil(num_train / batch_size)
+    batch_num_per_epoch = math.floor(num_train / batch_size)
 
     iterator_train = dataset_train.make_initializable_iterator()
     batch_num = batch_num_per_epoch * num_epochs
@@ -99,7 +99,7 @@ def main():
     dataset_val = tf.data.Dataset.from_tensor_slices((data_val_placeholder, label_val_placeholder)) \
         .apply(tf.contrib.data.batch_and_drop_remainder(batch_size)) \
         .batch(batch_size)
-    batch_num_val = math.ceil(num_val / batch_size)
+    batch_num_val = math.floor(num_val / batch_size)
     iterator_val = dataset_val.make_initializable_iterator()
     print('{}-{:d} testing batches per test.'.format(datetime.now(), batch_num_val))
 
