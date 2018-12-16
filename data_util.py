@@ -15,7 +15,7 @@ def load(filelist_file):
     folder = os.path.dirname(filelist_file)
     for line in open(filelist_file):
         filename = os.path.basename(line.strip())
-        print('files include, ', filename)
+        print('files include: ', filename)
         data = h5py.File(os.path.join(folder, filename))
         if 'normal' in data:
             points.append(np.concatenate([data['data'][...], data['normal'][...]], axis=-1).astype(np.float32))
@@ -47,7 +47,7 @@ def load_whole_data(filelist_file_train, filelist_file_val):
 
 
 if __name__ == '__main__':
-    filelist_file = './data/modelnet/test_files.txt'
+    filelist_file = './data/modelnet/train_files.txt'
     data = load(filelist_file)
     print(
         type(data), '\n',

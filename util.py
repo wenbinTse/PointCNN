@@ -3,7 +3,7 @@ import numpy as np
 import os
 import random
 from transforms3d.euler import euler2mat
-
+import argparse
 
 # return shape is (N, P, K, 2)
 def knn_indices_general(queries, points, k, sort=True, unique=True):
@@ -141,6 +141,20 @@ def scaling_factor(scaling_param, method):
 def uniform(bound):
     return bound * (2 * random.random() - 1)
 
+
+def parse_arg():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path_train', '-t', help='Path to train data', required=True)
+    parser.add_argument('--path_val', '-v', help='Path to validation data')
+    parser.add_argument('--load_ckpt', '-l', help='Path to a check point file for load')
+    parser.add_argument('--save_folder', '-s', help='Path to folder for saving check points and summary', required=True)
+    parser.add_argument('--setting', '-x', help='Setting to use', required=True, default='modelnet_x3_l4')
+    parser.add_argument('--epochs', help='Number of training epochs (default defined in setting)', type=int)
+    parser.add_argument('--batch_size', help='Batch size (default defined in setting)', type=int)
+
+    args = parser.parse_args()
+    print(args)
+    return args
 
 if __name__ == '__main__':
 

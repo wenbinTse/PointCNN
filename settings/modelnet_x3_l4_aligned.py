@@ -1,16 +1,8 @@
-#!/usr/bin/python3
 
-import os
-import sys
 import math
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import data_util
-
-load_fn = data_util.load_whole_data
 balance_fn = None
 map_fn = None
-keep_remainder = True
 save_ply_fn = None
 
 num_class = 40

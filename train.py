@@ -9,7 +9,6 @@ import os
 import sys
 import math
 import random
-import argparse
 import importlib
 import data_util
 import util
@@ -19,15 +18,7 @@ from datetime import datetime
 import pointcnn_cls as model
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--path_train', '-t', help='Path to train data', required=True)
-    parser.add_argument('--path_val', '-v', help='Path to validation data')
-    parser.add_argument('--load_ckpt', '-l', help='Path to a check point file for load')
-    parser.add_argument('--save_folder', '-s', help='Path to folder for saving check points and summary', required=True)
-    parser.add_argument('--setting', '-x', help='Setting to use', required=True, default='modelnet_x3_l4')
-    parser.add_argument('--epochs', help='Number of training epochs (default defined in setting)', type=int)
-    parser.add_argument('--batch_size', help='Batch size (default defined in setting)', type=int)
-    args = parser.parse_args()
+    args = util.parse_arg()
 
     time_string = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
     root_folder = os.path.join(args.save_folder, '%s_%s_%d' % (args.setting, time_string, os.getpid()))
@@ -43,13 +34,12 @@ def main():
         os.makedirs(folder_summary)
 
     print('PID:', os.getpid())
-    print(args)
 
     sys.path.append(os.path.join(os.path.dirname(__file__), 'settings'))
     setting = importlib.import_module(args.setting)
 
     #################################################################
-    # start to define tensorflow operation
+    # start to define tensorflow operations
     #################################################################
 
     num_epochs = args.epochs or setting.num_epochs
@@ -62,12 +52,11 @@ def main():
     scaling_range_val = setting.scaling_range_val
     jitter = setting.jitter
     jitter_val = setting.jitter_val
-    pool_setting_val = None if not hasattr(setting, 'pool_setting_val') else setting.pool_setting_val
     pool_setting_train = None if not hasattr(setting, 'pool_setting_train') else setting.pool_setting_train
 
     # Prepare inputs
     print('{}-Preparing datasets...'.format(datetime.now()))
-    data_train, label_train, data_val, label_val = setting.load_fn(args.path_train, args.path_val)
+    data_train, label_train, data_val, label_val = data_util.load_whole_data(args.path_train, args.path_val)
 
     num_train = data_train.shape[0]
     point_num = data_train.shape[1]
@@ -95,27 +84,22 @@ def main():
 
     ######################################################################
 
-    dataset_train = tf.data.Dataset.from_tensor_slices((data_train_placeholder, label_train_placeholder))
-    dataset_train = dataset_train.shuffle(buffer_size=batch_size * 4)
+    dataset_train = tf.data.Dataset.from_tensor_slices((data_train_placeholder, label_train_placeholder)) \
+        .apply(tf.contrib.data.batch_and_drop_remainder(batch_size)) \
+        .shuffle(buffer_size=batch_size * 4) \
+        .batch(batch_size) \
+        .repeat(num_epochs)
 
-    if setting.keep_remainder:
-        dataset_train = dataset_train.batch(batch_size)
-        batch_num_per_epoch = math.ceil(num_train / batch_size)
-    else:
-        dataset_train = dataset_train.apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
-        batch_num_per_epoch = math.floor(num_train / batch_size)
-    dataset_train = dataset_train.repeat(num_epochs)
+    batch_num_per_epoch = math.ceil(num_train / batch_size)
+
     iterator_train = dataset_train.make_initializable_iterator()
     batch_num = batch_num_per_epoch * num_epochs
     print('{}-{:d} training batches.'.format(datetime.now(), batch_num))
 
-    dataset_val = tf.data.Dataset.from_tensor_slices((data_val_placeholder, label_val_placeholder))
-    if setting.keep_remainder:
-        dataset_val = dataset_val.batch(batch_size)
-        batch_num_val = math.ceil(num_val / batch_size)
-    else:
-        dataset_val = dataset_val.apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
-        batch_num_val = math.floor(num_val / batch_size)
+    dataset_val = tf.data.Dataset.from_tensor_slices((data_val_placeholder, label_val_placeholder)) \
+        .apply(tf.contrib.data.batch_and_drop_remainder(batch_size)) \
+        .batch(batch_size)
+    batch_num_val = math.ceil(num_val / batch_size)
     iterator_val = dataset_val.make_initializable_iterator()
     print('{}-{:d} testing batches per test.'.format(datetime.now(), batch_num_val))
 
@@ -156,12 +140,6 @@ def main():
     labels_tile = tf.tile(labels_2d, (1, tf.shape(logits)[1]), name='labels_tile')
     loss_op = tf.losses.sparse_softmax_cross_entropy(labels=labels_tile, logits=logits)
 
-    #################################################################
-    # print shape
-    print('the shape of logits: ', tf.shape(logits))
-    print('the shape of labels_2d: ', tf.shape(labels_2d))
-    print('the shape of lables_title', tf.shape(labels_tile))
-    #################################################################
 
 
     with tf.name_scope('metrics'):
@@ -272,19 +250,12 @@ def main():
 
             ######################################################################
             # Training
-            if not setting.keep_remainder \
-                    or num_train % batch_size == 0 \
-                    or (batch_idx_train % batch_num_per_epoch) != (batch_num_per_epoch - 1):
-                batch_size_train = batch_size
-            else:
-                batch_size_train = num_train % batch_size
-
             offset = int(random.gauss(0, sample_num * setting.sample_num_variance))
             offset = max(offset, -sample_num * setting.sample_num_clip)
             offset = min(offset, sample_num * setting.sample_num_clip)
             sample_num_train = sample_num + offset
             xforms_np, rotations_np = util.get_xforms(
-                batch_size_train,
+                batch_size,
                 rotation_range=rotation_range,
                 scaling_range=scaling_range,
                 order=setting.rotation_order)
@@ -292,7 +263,7 @@ def main():
             sess.run([train_op, loss_mean_update_op, t_1_acc_update_op, t_1_per_class_acc_update_op],
                      feed_dict={
                          handle: handle_train,
-                         indices: util.get_indices(batch_size_train, sample_num_train, point_num, pool_setting_train),
+                         indices: util.get_indices(batch_size, sample_num_train, point_num, pool_setting_train),
                          xforms: xforms_np,
                          rotations: rotations_np,
                          jitter_range: np.array([jitter]),
