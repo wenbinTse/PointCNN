@@ -1,9 +1,7 @@
-matplotlib
-plyfile
-python-mnist
-requests
-scipy
-svgpathtools
-tensorflow-gpu>=1.6.0
-tqdm
-transforms3d
+tensorflow_gpu==1.8.0
+transforms3d==0.3.1
+numpy==1.14.3
+h5py==2.7.1
+PyOpenGL==3.1.0
+PyQt5==5.11.3
+tensorflow==1.12.0

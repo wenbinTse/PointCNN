@@ -3,8 +3,8 @@ import tensorflow as tf
 import util
 import layers
 
-def xconv(pts, fts, qrs, tag, N, K, D, P, C, C_pts_fts, is_training, with_X_transformation, depth_multiplier,
-          sorting_method=None, with_global=False):
+def xconv(pts, fts, qrs, tag, N, K, D, P, C, C_pts_fts, is_training, with_X_transformation, depth_multiplier, with_global=False):
+
     _, indices_dilated = util.knn_indices_general(qrs, pts, K * D, True)
     indices = indices_dilated[:, :, ::D, :]
 
@@ -53,7 +53,6 @@ class PointCNN:
         xconv_params = setting.xconv_params
         fc_params = setting.fc_params
         with_X_transformation = setting.with_X_transformation
-        sorting_method = setting.sorting_method
         N = tf.shape(points)[0]
 
         if setting.sampling == 'fps': # farthest point sampling
@@ -90,9 +89,6 @@ class PointCNN:
                     batch_indices = tf.tile(tf.reshape(tf.range(N), (-1, 1, 1)), (1, P, 1))
                     indices = tf.concat([batch_indices, tf.expand_dims(fps_indices,-1)], axis=-1)
                     qrs = tf.gather_nd(pts, indices, name= tag + 'qrs') # (N, P, 3)
-                elif setting.sampling == 'ids':
-                    indices = pf.inverse_density_sampling(pts, K, P)
-                    qrs = tf.gather_nd(pts, indices)
                 elif setting.sampling == 'random':
                     qrs = tf.slice(pts, (0, 0, 0), (-1, P, -1), name=tag + 'qrs')  # (N, P, 3)
                 else:
@@ -109,7 +105,7 @@ class PointCNN:
                 depth_multiplier = math.ceil(C / C_prev)
             with_global = (setting.with_global and layer_idx == len(xconv_params) - 1)
             fts_xconv = xconv(pts, fts, qrs, tag, N, K, D, P, C, C_pts_fts, is_training, with_X_transformation,
-                              depth_multiplier, sorting_method, with_global)
+                              depth_multiplier, with_global)
             fts_list = []
             for link in links:
                 fts_from_link = self.layer_fts[link]
@@ -140,7 +136,7 @@ class PointCNN:
                 C_pts_fts = C_prev // 4
                 depth_multiplier = 1
                 fts_xdconv = xconv(pts, fts, qrs, tag, N, K, D, P, C, C_pts_fts, is_training, with_X_transformation,
-                                   depth_multiplier, sorting_method)
+                                   depth_multiplier)
                 fts_concat = tf.concat([fts_xdconv, fts_qrs], axis=-1, name=tag + 'fts_concat')
                 fts_fuse = layers.dense(fts_concat, C, tag + 'fts_fuse', is_training)
                 self.layer_pts.append(qrs)

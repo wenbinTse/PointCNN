@@ -145,10 +145,10 @@ def uniform(bound):
 
 def prase_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path_train', '-t', help='Path to train data', required=True)
-    parser.add_argument('--path_val', '-v', help='Path to validation data')
+    parser.add_argument('--path_train', '-t', help='Path to train data', required=True, default=r'.\data\modelnet\train_files.txt')
+    parser.add_argument('--path_val', '-v', help='Path to validation data', default=r'.\data\modelnet\test_files.txt')
     parser.add_argument('--load_ckpt', '-l', help='Path to a check point file for load')
-    parser.add_argument('--save_folder', '-s', help='Path to folder for saving check points and summary', required=True)
+    parser.add_argument('--save_folder', '-s', help='Path to folder for saving check points and summary', required=True, default=r'./models')
     parser.add_argument('--setting', '-x', help='Setting to use', required=True, default='modelnet_x3_l4')
     parser.add_argument('--epochs', help='Number of training epochs (default defined in setting)', type=int)
     parser.add_argument('--batch_size', help='Batch size (default defined in setting)', type=int)

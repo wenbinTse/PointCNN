@@ -9,9 +9,7 @@ import os
 import sys
 import math
 import random
-import argparse
 import importlib
-import data_util
 import util
 import numpy as np
 import tensorflow as tf
@@ -41,7 +39,7 @@ def main():
     setting = importlib.import_module(args.setting)
 
     #################################################################
-    # start to define tensorflow operation
+    # start to define tensorflow operations
     #################################################################
 
     num_epochs = args.epochs or setting.num_epochs
